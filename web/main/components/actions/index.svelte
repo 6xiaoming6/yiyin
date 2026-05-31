@@ -78,15 +78,21 @@
     selectedId = id
   }
 
+  $: itemStatusMap = ((tick: number) => {
+    const map: Record<string, string> = {}
+    for (const id in imgInfoRecord) {
+      map[id] = imgInfoRecord[id]?.progress >= 100 ? '已完成' : '待处理'
+    }
+    return map
+  })(progressTick)
+
   $: photoStatusText = (() => {
     if (!selectedPhoto) return ''
-    progressTick
-    return imgInfoRecord[selectedPhoto.id]?.progress >= 100 ? '已完成' : '待处理'
+    return itemStatusMap[selectedPhoto.id] || '待处理'
   })()
 
   function getItemStatus(id: string) {
-    progressTick
-    return imgInfoRecord[id]?.progress >= 100 ? '已完成' : '待处理'
+    return itemStatusMap[id] || '待处理'
   }
 
   const labelWidth = '110px'
@@ -618,7 +624,7 @@
                   >
                     <div class='photo-main-line'>
                       <span class='photo-name'>{i.name}</span>
-                      <span class='photo-status'>- {getItemStatus(i.id)}</span>
+                      <span class='photo-status'>- {itemStatusMap[i.id] || '待处理'}</span>
                       <span class='photo-status-icon' class:done={record?.progress >= 100}>
                         {#if record?.progress > 0 && record?.progress < 100}
                           {Math.round(record.progress)}%

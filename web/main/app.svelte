@@ -13,11 +13,16 @@
   import './index.scss'
 
   let fileInfoList: IFileInfo[] = []
-  const processing = false
+  let processing = false
   let fileSelectDom: HTMLInputElement = null
   let showParamSetting = false
   let showTempSetting = false
   let fontList: IFontInfo[] = []
+
+  window.api['on:allTaskComplete'](() => {
+    processing = false
+    Message.success('生成完毕')
+  })
 
   $: onFileInfoListChange(fileInfoList)
   $: onFontMap($config.fontMap)
@@ -71,8 +76,10 @@
   }
 
   async function startTask() {
+    processing = true
     const res = await window.api.startTask()
     if (res.code !== 0) {
+      processing = false
       Message.error(res.message || '水印生成开启失败')
     }
   }
@@ -174,8 +181,9 @@
 
     <div class='button-wrap'>
       <label for='path' class='button grass'>添加图片</label>
-      <div class='button grass' on:click={startTask} on:keypress role='button' tabindex='-1'>
+      <div class='button grass' class:processing on:click={startTask} on:keypress role='button' tabindex='-1'>
         {#if processing}
+          <i class='db-icon-loading icon-loading'></i>
           处理中...
         {:else}
           生成印框
