@@ -16,6 +16,21 @@ export interface IConfig {
   output: string
 
   /**
+   * 图片输出路径模式
+   * - default: 系统默认路径 (Pictures/watermark)
+   * - sourceFolder: 与源图片相同文件夹
+   * - sourceSubfolder: 源图片文件夹下的 watermark 子文件夹
+   * - sourceNameSubfolder: 源图片文件夹下以文件名命名的子文件夹
+   * - custom: 用户自定义路径
+   */
+  outputMode: 'default' | 'sourceFolder' | 'sourceSubfolder' | 'sourceNameSubfolder' | 'custom'
+
+  /**
+   * 输出文件名模板，支持 ${filename} 等变量
+   */
+  outputNameTemplate: string
+
+  /**
    * 缓存存放目录
    */
   cacheDir: string

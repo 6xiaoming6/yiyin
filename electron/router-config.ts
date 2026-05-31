@@ -11,6 +11,8 @@ export default {
   addFont: 'addFont',
   delFont: 'delFont',
   miniSize: 'miniSize',
+  maxSize: 'maxSize',
+  restoreSize: 'restoreSize',
   closeApp: 'closeApp',
   getExitInfo: 'getExitInfo',
   uploadExifImg: 'uploadExifImg',
@@ -21,6 +23,7 @@ export default {
   genPreview: 'genPreview',
   drainQueue: 'drainQueue',
   pathJoin: 'pathJoin',
+  getDefaultOutput: 'getDefaultOutput',
   open: {
     selectPath: 'open:selectPath',
     dir: 'open:dir',
@@ -34,5 +37,7 @@ export default {
     assetsUpdate: 'on:assetsUpdate',
     genTextImg: 'on:genTextImg',
     genMainImgShadow: 'on:genMainImgShadow',
+    maximize: 'on:maximize',
+    allTaskComplete: 'on:allTaskComplete',
   },
 }

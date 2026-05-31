@@ -2,7 +2,7 @@
   import type { IConfig, IFileInfo, ImgInfo, TInputEvent } from '../../interface'
   import { arrToObj, roundDecimalPlaces } from '@common/utils'
   import { ActionItem } from '@components'
-  import { ColorPicker, Message, Switch } from '@ggchivalrous/db-ui'
+  import { ColorPicker, Input, Message, Option, Select, Switch } from '@ggchivalrous/db-ui'
   import { config } from '@web/store/config'
 
   import { smoothIncrement } from '@web/util/util'
@@ -12,6 +12,9 @@
   export let fileInfoList: IFileInfo[] = []
 
   let selectedId = ''
+  let selectedPhoto: IFileInfo | undefined
+  let previewShow = false
+  let previewOptionsKey = ''
   let previewUrl = ''
   let previewLoading = false
   let previewTimer: NodeJS.Timeout
@@ -28,9 +31,13 @@
     }
   }
 
+  $: selectedPhoto = fileInfoList.find(i => i.id === selectedId)
+  $: previewShow = $config.options.preview_show
+  $: previewOptionsKey = JSON.stringify($config.options)
+
   $: {
     // 当配置发生变化时，如果预览开启，则更新预览
-    if ($config && $config.options.preview_show && selectedId) {
+    if (previewOptionsKey && previewShow && selectedId) {
       clearTimeout(previewTimer)
       previewTimer = setTimeout(updatePreview, 300)
     }
@@ -41,7 +48,7 @@
   }
 
   async function updatePreview() {
-    if (!$config.options.preview_show) return
+    if (!previewShow) return
     const file = fileInfoList.find(i => i.id === selectedId)
     if (!file) return
 
@@ -50,7 +57,7 @@
       const res = await window.api.genPreview({ path: file.path, name: file.name })
       if (res && res.code === 0) {
         // 如果在请求过程中预览被关闭了，就不更新了
-        if ($config.options.preview_show) {
+        if (previewShow) {
           previewUrl = res.data
         }
       }
@@ -71,15 +78,27 @@
     selectedId = id
   }
 
+  $: photoStatusText = (() => {
+    if (!selectedPhoto) return ''
+    progressTick
+    return imgInfoRecord[selectedPhoto.id]?.progress >= 100 ? '已完成' : '待处理'
+  })()
+
+  function getItemStatus(id: string) {
+    progressTick
+    return imgInfoRecord[id]?.progress >= 100 ? '已完成' : '待处理'
+  }
+
   const labelWidth = '110px'
 
   let handleCount = 0
-  let outputDirName = ''
+  let photoDropdownOpen = false
   let imgInfoRecord: Record<string, ImgInfo> = {}
+  let progressTick = 0
 
-  $: getPathName($config.output)
   $: onFileInfoList(fileInfoList)
   $: getHandleCount(imgInfoRecord)
+  $: selectedPhoto && progressTick
 
   window.api['on:progress']((data: Pick<ImgInfo, 'id' | 'progress'>) => {
     if (imgInfoRecord[data.id]) {
@@ -93,6 +112,7 @@
         10,
         (n) => {
           imgInfoRecord[data.id].progress = n
+          progressTick++
         },
       )
     }
@@ -127,31 +147,19 @@
     const data = await window.api['open:selectPath']()
     if (data.code === 0 && data.data.output) {
       $config.output = data.data.output
+      $config.outputMode = data.data.outputMode
     }
   }
 
-  function openDir(dir: string) {
-    window.api['open:dir'](dir)
+  async function resetOutputPath() {
+    const res = await window.api.getDefaultOutput()
+    if (res.code === 0 && typeof res.data === 'string') {
+      $config.output = res.data
+    }
   }
 
-  function getPathName(path: string) {
-    path = path.trim()
-
-    if (!path) {
-      outputDirName = '异常目录无法识别'
-      return
-    }
-
-    const isMatch = path.match(/^([A-Z]:)\\/i)
-
-    if (isMatch) {
-      const arr = path.replace(isMatch[1], '').split('\\')
-      outputDirName = arr[arr.length - 1] || isMatch[0]
-      return
-    }
-
-    const arr = path.split('/')
-    outputDirName = arr[arr.length - 1] || '/'
+  function resetOutputName() {
+    $config.outputNameTemplate = '${filename}_watermark'
   }
 
   function onBGRateChange(e: CustomEvent<boolean>) {
@@ -203,12 +211,23 @@
     return info.data
   }
 
-  async function cpExif(id: string) {
-    if (!imgInfoRecord[id] || !imgInfoRecord[id].exif) {
-      return Message.error('图片信息不存在！！')
+  async function cpExif(id: string, path?: string) {
+    const record = imgInfoRecord[id]
+    const filePath = path || fileInfoList.find(i => i.id === id)?.path
+
+    if (!record || !filePath) {
+      return Message.error('图片信息不存在！')
     }
 
-    navigator.clipboard.writeText(JSON.stringify(imgInfoRecord[id].exif, null, 2))
+    if (record.exif === null) {
+      record.exif = await getExitInfo(id, filePath)
+    }
+
+    if (!record.exif) {
+      return Message.error('图片信息不存在！')
+    }
+
+    navigator.clipboard.writeText(JSON.stringify(record.exif, null, 2))
     return Message.success('相机信息已复制到粘贴板')
   }
 
@@ -227,9 +246,89 @@
 <div class='app-action-wrap'>
   <div class='app-action-left-wrap'>
     <ActionItem {labelWidth} title='输出目录'>
-      <svelte:fragment slot='popup'>图片输出目录，点击可以打开目录</svelte:fragment>
-      <span class='db-icon-setting output-setting' on:click|stopPropagation={changeOutputPath} on:keypress role='button' tabindex='-1'></span>
-      <span class='open-file-line' on:click={() => openDir($config.output)} on:keypress role='button' tabindex='-1'>{outputDirName}</span>
+      <svelte:fragment slot='popup'>
+        选择图片输出目录的模式
+        <br>
+        <b>默认路径：</b>系统图片目录下的 watermark 文件夹
+        <br>
+        <b>当前文件夹：</b>与源图片相同目录
+        <br>
+        <b>./watermark：</b>源图片目录下的 watermark 子文件夹
+        <br>
+        <b>./文件名.watermark：</b>以源文件名命名的子文件夹
+        <br>
+        <b>自定义路径：</b>自定义输出路径（支持 {'${filename}'} 变量）
+      </svelte:fragment>
+      <Select size='mini' bind:value={$config.outputMode} class='output-mode-select no-drag'>
+        <Option value='default' label='默认路径'></Option>
+        <Option value='sourceFolder' label='当前文件夹(./)'></Option>
+        <Option value='sourceSubfolder' label='./watermark文件夹'></Option>
+        <Option value='sourceNameSubfolder' label={'./${filename}.watermark文件夹'}></Option>
+        <Option value='custom' label='自定义路径'></Option>
+      </Select>
+    </ActionItem>
+
+    {#if $config.outputMode === 'custom'}
+      <div class='output-custom-row'>
+        <Input
+          size='mini'
+          class='text-input output-path-input'
+          bind:value={$config.output}
+          placeholder="输入或选择输出路径（支持 {'${filename}'} 变量）"
+        />
+        <span
+          class='db-icon-folder-opened output-action-icon'
+          title='选择文件夹'
+          on:click|stopPropagation={changeOutputPath}
+          on:keypress
+          role='button'
+          tabindex='-1'
+        />
+        <span
+          class='db-icon-refresh output-action-icon'
+          title='使用默认路径'
+          on:click|stopPropagation={resetOutputPath}
+          on:keypress
+          role='button'
+          tabindex='-1'
+        />
+      </div>
+    {/if}
+
+    <ActionItem {labelWidth} title='输出文件名'>
+      <svelte:fragment slot='popup'>
+        设置输出文件名的模板，支持以下变量：
+        <br>
+        {'${filename}'} - 原文件名
+        <br>
+        {'${ext}'} - 原扩展名
+        <br>
+        {'${date}'} - 日期(YYYYMMDD)
+        <br>
+        {'${time}'} - 时间(HHMMSS)
+        <br>
+        {'${datetime}'} - 日期时间
+        <br>
+        {'${random}'} - 随机字符串
+        <br>
+        默认：{'${filename}'}_watermark.jpg
+      </svelte:fragment>
+      <Input
+        size='mini'
+        class='text-input'
+        style='flex: 1;'
+        bind:value={$config.outputNameTemplate}
+        placeholder={'${filename}' + '_watermark'}
+      />
+      <span
+        class='db-icon-refresh output-action-icon'
+        style='font-size: 16px; margin-left: 6px;'
+        title='使用默认配置'
+        on:click|stopPropagation={resetOutputName}
+        on:keypress
+        role='button'
+        tabindex='-1'
+      />
     </ActionItem>
 
     <ActionItem {labelWidth} title='主图占比'>
@@ -409,9 +508,12 @@
 
   <div class='app-action-right-wrap'>
     <div class='image-list-wrap'>
-      {#if $config.options.preview_show && selectedId}
-        <div class='preview-wrap'>
-          {#if previewLoading}
+      <div class='preview-wrap grass-inset'>
+          {#if !fileInfoList.length}
+            <div class='preview-placeholder'>添加图片后在这里预览</div>
+          {:else if !$config.options.preview_show}
+            <div class='preview-placeholder'>开启实时预览后显示效果</div>
+          {:else if previewLoading}
             <div class='preview-loading'>
               <i class='db-icon-loading icon-loading'></i>
               生成预览中...
@@ -421,9 +523,9 @@
           {:else}
             <div class='preview-placeholder'>预览图生成失败</div>
           {/if}
-        </div>
-      {/if}
+      </div>
 
+      {#if false}
       <div class='img-wrap grass-inset'>
         <div class='img-list'>
           {#each fileInfoList as i (i.id)}
@@ -471,12 +573,92 @@
           {/each}
         </div>
       </div>
+      {/if}
+
+      <div class='task-action'>
+        <ActionItem title='图片数量'>{fileInfoList.length}</ActionItem>
+        <ActionItem title='完成数量'>{handleCount}</ActionItem>
+        {#if fileInfoList.length}
+          <div class='photo-dropdown no-drag' class:open={photoDropdownOpen}>
+            <div
+              class='photo-dropdown-trigger'
+              on:click={() => { photoDropdownOpen = !photoDropdownOpen }}
+              on:keypress
+              role='button'
+              tabindex='-1'
+            >
+              {#if selectedPhoto}
+                {@const selectedRecord = imgInfoRecord[selectedPhoto.id]}
+                <span class='photo-name'>{selectedPhoto.name}</span>
+                <span class='photo-status'>- {photoStatusText}</span>
+                <span class='photo-status-icon' class:done={selectedRecord?.progress >= 100}>
+                  {#if selectedRecord?.progress > 0 && selectedRecord?.progress < 100}
+                    {Math.round(selectedRecord.progress)}%
+                  {:else if selectedRecord?.progress >= 100}
+                    <i class='db-icon-success'></i>
+                  {:else}
+                    <i class='db-icon-error'></i>
+                  {/if}
+                </span>
+              {/if}
+              <i class='photo-arrow db-icon-arrow-down'></i>
+            </div>
+
+            {#if photoDropdownOpen}
+              <div class='photo-dropdown-menu grass'>
+                {#each fileInfoList as i (i.id)}
+                  {@const record = imgInfoRecord[i.id]}
+                  <div
+                    class='photo-option'
+                    class:selected={selectedId === i.id}
+                    on:click={() => { selectImage(i.id); photoDropdownOpen = false }}
+                    on:keypress
+                    role='button'
+                    tabindex='-1'
+                  >
+                    <div class='photo-main-line'>
+                      <span class='photo-name'>{i.name}</span>
+                      <span class='photo-status'>- {getItemStatus(i.id)}</span>
+                      <span class='photo-status-icon' class:done={record?.progress >= 100}>
+                        {#if record?.progress > 0 && record?.progress < 100}
+                          {Math.round(record.progress)}%
+                        {:else if record?.progress >= 100}
+                          <i class='db-icon-success'></i>
+                        {:else}
+                          <i class='db-icon-error'></i>
+                        {/if}
+                      </span>
+                    </div>
+                    <div class='photo-camera-info'>
+                      相机信息:
+                      {#await getExitInfo(i.id, i.path)}
+                        <i class='db-icon-loading'></i>
+                      {:then v}
+                        {#if v}
+                          <i class='db-icon-success success'></i>
+                          <i
+                            class='photo-copy icon db-icon-document-copy'
+                            title='复制相机信息'
+                            on:click|stopPropagation={() => cpExif(i.id, i.path)}
+                            on:keypress
+                            role='button'
+                            tabindex='-1'
+                          ></i>
+                        {:else}
+                          <i class='db-icon-error error'></i>
+                        {/if}
+                      {/await}
+                    </div>
+                  </div>
+                {/each}
+              </div>
+            {/if}
+          </div>
+          <div class='button' on:click={clearImgInfo} on:keypress role='button' tabindex='-1'>清空</div>
+        {/if}
+      </div>
+
     </div>
 
-    <div class='task-action'>
-      <ActionItem title='图片数量'>{fileInfoList.length}</ActionItem>
-      <ActionItem title='完成数量'>{handleCount}</ActionItem>
-      <div class='button' on:click={clearImgInfo} on:keypress role='button' tabindex='-1'>清空</div>
-    </div>
   </div>
 </div>

@@ -5,6 +5,7 @@ export interface ImageToolOption {
   outputOption: OutputOption
   cachePath: string
   outputPath: string
+  outputNameTemplate: string
 }
 
 export interface OutputOption {

@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-import { config, getConfig, storeConfig } from '@config'
+import { config, DefaultConfig, getConfig, storeConfig } from '@config'
 import { Router } from '@modules/router'
 import routerConfig from '@root/router-config'
 import paths from '@src/path'
@@ -14,6 +14,9 @@ r.listen(routerConfig.getConfig, async () => config)
 
 r.listen(routerConfig.setConfig, async (data: any) => {
   storeConfig({
+    output: data.output,
+    outputMode: data.outputMode,
+    outputNameTemplate: data.outputNameTemplate,
     options: Object.assign(config.options, data.options),
     tempFields: data.tempFields,
     customTempFields: data.customTempFields,
@@ -28,6 +31,15 @@ r.listen(routerConfig.resetConfig, async () => {
 })
 
 r.listen(routerConfig.miniSize, async () => BrowserWindow.getFocusedWindow()?.minimize?.())
+
+r.listen(routerConfig.maxSize, async () => BrowserWindow.getFocusedWindow()?.maximize?.())
+
+r.listen(routerConfig.restoreSize, async () => {
+  const win = BrowserWindow.getFocusedWindow()
+  if (win?.isMaximized()) {
+    win.unmaximize()
+  }
+})
 
 r.listen(routerConfig.closeApp, async () => app.quit())
 
@@ -96,5 +108,7 @@ r.listen(routerConfig.logoList, async () => {
 })
 
 r.listen(routerConfig.pathJoin, async (data: string[]) => path.join(...data))
+
+r.listen(routerConfig.getDefaultOutput, async () => DefaultConfig.output)
 
 export default r

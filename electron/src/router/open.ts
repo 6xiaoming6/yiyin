@@ -16,7 +16,10 @@ r.listen(routerConfig.open.selectPath, async (data, event, win) => {
   })
 
   if (!res.canceled && res.filePaths.length > 0) {
-    config.output = res.filePaths[0]
+    config.output = path.basename(res.filePaths[0]) === '.catch'
+      ? path.dirname(res.filePaths[0])
+      : res.filePaths[0]
+    config.outputMode = 'custom'
 
     if (import.meta.env.DEV) {
       config.cacheDir = path.join(config.output, '.catch')

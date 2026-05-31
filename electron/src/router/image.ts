@@ -4,8 +4,8 @@ import { Router } from '@modules/router'
 import routerConfig from '@root/router-config'
 import { mainApp } from '@src/common/app'
 import { genMainImgShadowQueue, genTextImgQueue, imageToolQueue } from '@src/common/queue'
-import { config } from '@src/config'
-import { cpObj } from '@utils'
+import { config, DefaultConfig } from '@src/config'
+import { cpObj, resolveOutputPath } from '@utils'
 
 const r = new Router()
 
@@ -24,10 +24,18 @@ r.listen<StartTaskData[], ImgInfo[]>(routerConfig.addTask, async (fileUrlList) =
   const imgList: ImgInfo[] = []
 
   for (const fileInfo of fileUrlList) {
+    const resolvedOutput = resolveOutputPath(
+      config.outputMode,
+      config.output,
+      fileInfo.path,
+      DefaultConfig.output,
+    )
+
     const tool = new ImageTool(fileInfo.path, fileInfo.name, {
       cachePath: config.cacheDir,
       outputOption: cpObj(config.options),
-      outputPath: cpObj(config.output),
+      outputPath: resolvedOutput,
+      outputNameTemplate: config.outputNameTemplate,
     })
 
     tool.on('progress', (id, progress) => {
@@ -41,7 +49,9 @@ r.listen<StartTaskData[], ImgInfo[]>(routerConfig.addTask, async (fileUrlList) =
 })
 
 r.listen<void, boolean>(routerConfig.startTask, async () => {
-  imageToolQueue.run()
+  if (imageToolQueue.isRunning) return true
+  await imageToolQueue.run()
+  mainApp.win.webContents.send(routerConfig.on.allTaskComplete)
   return true
 })
 
@@ -57,10 +67,18 @@ r.listen<{ path: string, name: string }, string>(routerConfig.genPreview, async 
     previewTool.cancel()
   }
 
+  const resolvedOutput = resolveOutputPath(
+    config.outputMode,
+    config.output,
+    fileInfo.path,
+    DefaultConfig.output,
+  )
+
   const tool = new ImageTool(fileInfo.path, fileInfo.name, {
     cachePath: config.cacheDir,
     outputOption: cpObj(config.options),
-    outputPath: cpObj(config.output),
+    outputPath: resolvedOutput,
+    outputNameTemplate: config.outputNameTemplate,
   })
 
   previewTool = tool

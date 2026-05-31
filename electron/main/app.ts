@@ -77,6 +77,13 @@ export default class Application {
     image.use(this.win)
     this.win.on('closed', () => app.quit())
 
+    this.win.on('maximize', () => {
+      this.win.webContents.send(routerConfig.on.maximize, true)
+    })
+    this.win.on('unmaximize', () => {
+      this.win.webContents.send(routerConfig.on.maximize, false)
+    })
+
     if (import.meta.env.DEV) {
       this.win.webContents.on('before-input-event', (event, input) => {
         if ((input.key === 'r' && input.meta) || input.key.toLowerCase() === 'f5') {
@@ -147,6 +154,8 @@ export default class Application {
     const opts: BrowserWindowConstructorOptions = {
       width: 900 + (isDev ? 500 : 0),
       height: 730,
+      minWidth: 1100,
+      minHeight: 730,
       title: '壹印',
       frame: false,
       webPreferences: {
@@ -155,8 +164,6 @@ export default class Application {
     }
 
     if (import.meta.env.PROD) {
-      opts.minWidth = opts.width
-      opts.minHeight = opts.height
       opts.maxWidth = opts.width
       opts.maxHeight = opts.height
     }

@@ -14,6 +14,8 @@ export const DefaultConfig: IConfig = {
   version: import.meta.env.VITE_VERSION,
   dir: path.join(userDataPath, 'config.json'),
   output: path.join(getPath('pictures'), 'watermark'),
+  outputMode: 'default' as IConfig['outputMode'],
+  outputNameTemplate: '${filename}_watermark',
   cacheDir: path.join(getPath('temp'), 'yiyin'),
   staticDir: path.join(userDataPath, 'static'),
 
@@ -103,6 +105,23 @@ function normalizeConf(conf: IConfig) {
   return _conf
 }
 
+function normalizeOutputPath(output: unknown) {
+  if (typeof output !== 'string') {
+    if (output && typeof output === 'object' && 'data' in output && typeof output.data === 'string') {
+      output = output.data
+    }
+    else {
+      return DefaultConfig.output
+    }
+  }
+
+  if (path.basename(output) === '.catch') {
+    return path.dirname(output)
+  }
+
+  return output
+}
+
 export function getConfig(def = false) {
   const _config: IConfig = getDefConf()
 
@@ -120,6 +139,8 @@ export function getConfig(def = false) {
     else {
       Object.assign(_config, {
         output: fileConfig.output || _config.output,
+        outputMode: fileConfig.outputMode || _config.outputMode,
+        outputNameTemplate: fileConfig.outputNameTemplate || _config.outputNameTemplate,
         options: Object.assign(_config.options, fileConfig.options),
         versionUpdateInfo: Object.assign(_config.versionUpdateInfo, fileConfig.versionUpdateInfo),
         tempFields: fileConfig.tempFields || _config.tempFields,
@@ -145,6 +166,8 @@ export function getConfig(def = false) {
 
     Object.assign(_config, normalizeConf(_config))
   }
+
+  _config.output = normalizeOutputPath(_config.output)
 
   if (import.meta.env.DEV) {
     _config.cacheDir = path.join(_config.output, '.catch')
@@ -181,5 +204,6 @@ export function getConfig(def = false) {
 
 export function storeConfig(conf: Partial<IConfig>) {
   Object.assign(config, normalizeConf(Object.assign(config, conf)))
+  config.output = normalizeOutputPath(config.output)
   fs.writeFileSync(config.dir, JSON.stringify(config, null, 2))
 }

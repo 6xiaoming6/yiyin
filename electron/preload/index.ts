@@ -31,7 +31,10 @@ if (import.meta.env.DEV) {
 
 contextBridge.exposeInMainWorld('api', generateRouter(routerConfig).reduce((o, i) => {
   if (i.startsWith('on:')) {
-    o[i] = (cb: any) => ipcRenderer.on(i, (e, d) => cb(d, e))
+    o[i] = (cb: any) => {
+        ipcRenderer.removeAllListeners(i)
+        ipcRenderer.on(i, (e, d) => cb(d, e))
+      }
   }
   else {
     o[i] = (data: any) => ipcRenderer.invoke(i, data)

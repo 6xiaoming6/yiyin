@@ -30,6 +30,10 @@ export class Queue<T = any> {
     return [...this.queue.values()]
   }
 
+  get isRunning() {
+    return this.status === 'running'
+  }
+
   constructor(opt?: QueueOption) {
     this.concurrency = opt?.concurrency || 1
     this.opt = { autoRun: true, ...opt }

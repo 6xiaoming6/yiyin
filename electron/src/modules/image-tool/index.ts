@@ -6,7 +6,7 @@ import type { ImageToolOption, Material, OutputFilePaths, SizeInfo } from './int
 import { Buffer } from 'node:buffer'
 import Event from 'node:events'
 import fs from 'node:fs'
-import { join } from 'node:path'
+import { join, parse as pathParse } from 'node:path'
 import ffmpegPath from '@ffmpeg-installer/ffmpeg'
 import { ExifTool } from '@modules/exiftool'
 import { Logger } from '@modules/logger'
@@ -75,12 +75,27 @@ export class ImageTool extends Event {
     this.id = md5(`${md5(path)}${Math.random()}${Date.now()}`)
 
     const baseFilePath = join(opt.cachePath, this.id)
+    const { name: nameWithoutExt, ext } = pathParse(name)
+    const now = new Date()
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const varMap: Record<string, string> = {
+      filename: nameWithoutExt,
+      ext: ext.replace('.', ''),
+      date: `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`,
+      time: `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`,
+      datetime: `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`,
+      random: Math.random().toString(36).slice(2, 8),
+    }
+    const templateName = opt.outputNameTemplate.replaceAll(
+      /\$\{(\w+)\}/g,
+      (_: string, key: string) => varMap[key] ?? `\${${key}}`,
+    )
     this.outputFileNames = {
       base: baseFilePath,
       bg: `${baseFilePath}_bg.jpg`,
       main: `${baseFilePath}_main.jpg`,
       mask: `${baseFilePath}_mask.png`,
-      composite: join(opt.outputPath, getFileName(opt.outputPath, name)),
+      composite: join(opt.outputPath, getFileName(opt.outputPath, templateName)),
     }
   }
 

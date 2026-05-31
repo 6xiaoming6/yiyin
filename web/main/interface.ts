@@ -14,6 +14,8 @@ export interface IConfig extends Pick<
   'options' | 'tempFields' | 'customTempFields' | 'staticDir' | 'temps'
 > {
   output: string
+  outputMode: 'default' | 'sourceFolder' | 'sourceSubfolder' | 'sourceNameSubfolder' | 'custom'
+  outputNameTemplate: string
   fontMap: Record<string, string>
   fontDir: string
 }

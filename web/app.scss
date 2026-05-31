@@ -12,6 +12,15 @@
   --error-color: #ba4848;
 }
 
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 * {
   padding: 0;
   margin: 0;
@@ -247,6 +256,22 @@ body {
 
     &:first-child {
       margin-left: 0px;
+    }
+
+    &.processing {
+      @include grass-inset();
+      cursor: not-allowed;
+      opacity: 0.6;
+
+      &:hover {
+        @include grass-inset();
+      }
+
+      .icon-loading {
+        display: inline-block;
+        font-size: 16px;
+        animation: rotate 1s linear infinite;
+      }
     }
   }
 

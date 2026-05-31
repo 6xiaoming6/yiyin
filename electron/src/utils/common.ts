@@ -47,6 +47,43 @@ export function getFileName(dir: string, fileName: string) {
   return `${fileNameParse.name}-${parseList[0].index + 1}.jpg`
 }
 
+export function resolveOutputPath(
+  mode: string,
+  storedOutput: string,
+  sourceFilePath: string,
+  defaultOutput: string,
+): string {
+  const sourceDir = path.dirname(sourceFilePath)
+  const sourceName = path.parse(sourceFilePath).name
+
+  let resolved: string
+
+  switch (mode) {
+    case 'sourceFolder':
+      resolved = sourceDir
+      break
+    case 'sourceSubfolder':
+      resolved = path.join(sourceDir, 'watermark')
+      break
+    case 'sourceNameSubfolder':
+      resolved = path.join(sourceDir, `${sourceName}.watermark`)
+      break
+    case 'custom':
+      resolved = storedOutput.replaceAll('${filename}', sourceName)
+      break
+    case 'default':
+    default:
+      resolved = storedOutput || defaultOutput
+      break
+  }
+
+  if (!fs.existsSync(resolved)) {
+    fs.mkdirSync(resolved, { recursive: true })
+  }
+
+  return resolved
+}
+
 export async function hasNewVersion(): Promise<INewVersionRes> {
   const updateInfo: INewVersionRes = {
     update: false,

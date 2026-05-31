@@ -7,8 +7,23 @@
 
   const qqQun = '718615618'
 
+  let isMaximized = false
+
+  window.api['on:maximize']((maximized: boolean) => {
+    isMaximized = maximized
+  })
+
   function miniSizeWindow() {
     window.api.miniSize()
+  }
+
+  function toggleMaximize() {
+    if (isMaximized) {
+      window.api.restoreSize()
+    }
+    else {
+      window.api.maxSize()
+    }
   }
 
   function closeApp() {
@@ -79,10 +94,32 @@
       <div slot='reference' class='no-drag button app-header-button app-header-reset' on:click={resetConfig} on:keypress role='button' tabindex='-1'>
         <svg class='icon' viewBox='0 0 1024 1024' version='1.1' xmlns='http://www.w3.org/2000/svg' width='20' height='20'><path d='M491.52 819.2a304.3328 304.3328 0 0 1-217.088-90.112l28.672-28.672a266.24 266.24 0 1 0-40.96-327.68l-35.2256-21.2992A307.2 307.2 0 1 1 491.52 819.2z'></path><path d='M430.08 409.6H245.76a20.48 20.48 0 0 1-20.48-20.48V204.8h40.96v163.84h163.84z'></path><path d='M512 512m-61.44 0a61.44 61.44 0 1 0 122.88 0 61.44 61.44 0 1 0-122.88 0Z'></path></svg>
       </div>
-      <p>重置回默认选项</p>
+      <p style='text-align: center;'>重置回默认选项</p>
     </Popover>
 
-    <div class='no-drag button app-header-button' on:click={miniSizeWindow} on:keypress role='button' tabindex='-1'>-</div>
-    <div class='no-drag button app-header-button' on:click={closeApp} on:keypress role='button' tabindex='-1'>x</div>
+    <Popover trigger='hover' class='window-ctrl-popover'>
+      <div slot='reference' class='no-drag button app-header-button' on:click={miniSizeWindow} on:keypress role='button' tabindex='-1'>
+        <svg class='icon' viewBox='0 0 1024 1024' version='1.1' xmlns='http://www.w3.org/2000/svg' width='20' height='20'><rect x='200' y='480' width='624' height='64' fill='currentColor'></rect></svg>
+      </div>
+      <p style='text-align: center;'>最小化</p>
+    </Popover>
+
+    <Popover trigger='hover' class='window-ctrl-popover'>
+      <div slot='reference' class='no-drag button app-header-button' on:click={toggleMaximize} on:keypress role='button' tabindex='-1'>
+        {#if isMaximized}
+          <svg class='icon' viewBox='0 0 1024 1024' version='1.1' xmlns='http://www.w3.org/2000/svg' width='20' height='20'><path d='M288 320h448v448H288z' fill='none' stroke='currentColor' stroke-width='50'></path><path d='M368 240h448v448H368z' fill='none' stroke='currentColor' stroke-width='50'></path></svg>
+        {:else}
+          <svg class='icon' viewBox='0 0 1024 1024' version='1.1' xmlns='http://www.w3.org/2000/svg' width='20' height='20'><rect x='288' y='288' width='448' height='448' fill='none' stroke='currentColor' stroke-width='50' rx='8'></rect></svg>
+        {/if}
+      </div>
+      <p style='text-align: center;'>{isMaximized ? '恢复' : '最大化'}</p>
+    </Popover>
+
+    <Popover trigger='hover' class='window-ctrl-popover'>
+      <div slot='reference' class='no-drag button app-header-button app-header-close-btn' on:click={closeApp} on:keypress role='button' tabindex='-1'>
+        <svg class='icon' viewBox='0 0 1024 1024' version='1.1' xmlns='http://www.w3.org/2000/svg' width='20' height='20'><path d='M288 288l448 448M736 288L288 736' fill='none' stroke='currentColor' stroke-width='64' stroke-linecap='round'></path></svg>
+      </div>
+      <p style='text-align: center;'>关闭</p>
+    </Popover>
   </div>
 </div>
