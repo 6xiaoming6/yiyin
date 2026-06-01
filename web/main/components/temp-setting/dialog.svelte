@@ -15,6 +15,8 @@
   let form: ITemp = null
   let tempInputDom: HTMLInputElement = null
   let replaceFieldTemp = ''
+  let nameError = ''
+  let tempError = ''
 
   $: listenData(data)
   $: tempFieldRecord = arrToObj([...$config.tempFields, ...$config.customTempFields], 'key')
@@ -42,6 +44,7 @@
   }
 
   function onInputTemp(e: CustomEvent<string>) {
+    tempError = ''
     form.temp = restoreTempField(e.detail)
   }
 
@@ -62,6 +65,14 @@
   }
 
   function onSave() {
+    const name = (form.name || '').trim()
+    const temp = (form.temp || '').trim()
+
+    nameError = name ? '' : '名称不能为空'
+    tempError = temp ? '' : '模板内容不能为空'
+
+    if (nameError || tempError) return
+
     config.update((v) => {
       if (!form.key) {
         form.key = md5(`${Date.now()}-${form.name}`)
@@ -69,10 +80,10 @@
         return v
       }
 
-      const temp = v.temps.find(i => i.key === form.key)
+      const target = v.temps.find(i => i.key === form.key)
 
-      if (temp) {
-        Object.assign(temp, form)
+      if (target) {
+        Object.assign(target, form)
       }
 
       return v
@@ -112,7 +123,12 @@
   </ActionItem>
 
   <ActionItem title='名称'>
-    <Input class='text-input' bind:value={form.name} />
+    <Input
+      class={nameError ? 'text-input input-error' : 'text-input'}
+      bind:value={form.name}
+      placeholder={nameError || '请输入名称'}
+      on:input={() => nameError = ''}
+    />
   </ActionItem>
 
   <ActionItem title='模板内容'>
@@ -121,7 +137,14 @@
       <br>
       注意：内容长度不能过长否则文字会被截断或输出异常
     </svelte:fragment>
-    <Input bind:input={tempInputDom} class='text-input' type='text' value={replaceFieldTemp} on:input={onInputTemp}>
+    <Input
+      bind:input={tempInputDom}
+      class={tempError ? 'text-input input-error' : 'text-input'}
+      type='text'
+      value={replaceFieldTemp}
+      placeholder={tempError || '请输入模板内容'}
+      on:input={onInputTemp}
+    >
       <FieldSelect slot='append' on:change={onFieldSelect} />
     </Input>
   </ActionItem>
@@ -144,3 +167,9 @@
     <div class='button grass' on:click={onSave} on:keypress role='button' tabindex='-1'>保 存</div>
   </footer>
 </Dialog>
+
+<style>
+  :global(.input-error .db-input__inner::placeholder) {
+    color: #ff030348;
+  }
+</style>

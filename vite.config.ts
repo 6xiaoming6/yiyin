@@ -33,7 +33,7 @@ function objToEnvStr(obj: Record<string, any>) {
 }
 
 export default defineConfig(async ({ command }) => {
-  const port = 5173
+  const port = 5194
   const isServe = command === 'serve'
   const isBuild = command === 'build'
   const sourcemap = isServe || !!process.env.VSCODE_DEBUG

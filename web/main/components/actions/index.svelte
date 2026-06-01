@@ -34,10 +34,12 @@
   $: selectedPhoto = fileInfoList.find(i => i.id === selectedId)
   $: previewShow = $config.options.preview_show
   $: previewOptionsKey = JSON.stringify($config.options)
+  // 只监听已启用的模板（use: true），新建模板默认不启用因此不会触发预览刷新
+  $: previewTempsKey = JSON.stringify($config.temps.filter(t => t.use))
 
   $: {
-    // 当配置发生变化时，如果预览开启，则更新预览
-    if (previewOptionsKey && previewShow && selectedId) {
+    // 当配置或已启用模板发生变化时，如果预览开启，则更新预览
+    if (previewOptionsKey && previewTempsKey && previewShow && selectedId) {
       clearTimeout(previewTimer)
       previewTimer = setTimeout(updatePreview, 300)
     }
