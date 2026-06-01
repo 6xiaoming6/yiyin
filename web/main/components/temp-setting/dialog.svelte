@@ -170,6 +170,6 @@
 
 <style>
   :global(.input-error .db-input__inner::placeholder) {
-    color: #ff030348;
+    color: var(--error-color);
   }
 </style>

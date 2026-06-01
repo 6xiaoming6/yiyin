@@ -36,6 +36,7 @@ export const config = writable<IConfig>({
   tempFields: [],
   customTempFields: [],
   temps: [],
+  presets: [],
   output: '',
   outputMode: 'default' as 'default' | 'sourceFolder' | 'sourceSubfolder' | 'sourceNameSubfolder' | 'custom',
   outputNameTemplate: '${filename}_watermark',
@@ -52,6 +53,7 @@ function onConfigUpdate(v: IConfig, newConf: any) {
   v.tempFields = newConf.tempFields
   v.customTempFields = newConf.customTempFields
   v.temps = newConf.temps
+  v.presets = newConf.presets
   v.staticDir = newConf.staticDir
   return v
 }

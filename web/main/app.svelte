@@ -9,13 +9,14 @@
   import { config, pathInfo } from '@web/store/config'
   import { importFont } from '@web/util/util'
 
-  import { Actions, Footer, Header, ParamSetting, TempSetting } from './components'
+  import { Actions, Footer, Header, ParamSetting, PresetSetting, TempSetting } from './components'
   import './index.scss'
 
   let fileInfoList: IFileInfo[] = []
   let processing = false
   let fileSelectDom: HTMLInputElement = null
   let showParamSetting = false
+  let showPresetSetting = false
   let showTempSetting = false
   let fontList: IFontInfo[] = []
 
@@ -189,12 +190,14 @@
           生成印框
         {/if}
       </div>
+      <div class='button grass' on:click={() => { showPresetSetting = true }} on:keypress role='button' tabindex='-1'>印框预设</div>
       <div class='button grass' on:click={() => { showParamSetting = true }} on:keypress role='button' tabindex='-1'>参数设置</div>
-      <div class='button grass' on:click={() => { showTempSetting = true }} on:keypress role='button' tabindex='-1'>模板设置</div>
+      <div class='button grass' on:click={() => { showTempSetting = true }} on:keypress role='button' tabindex='-1'>文字模板</div>
     </div>
   </div>
 
   <Footer />
   <ParamSetting bind:visible={showParamSetting} />
+  <PresetSetting bind:visible={showPresetSetting} />
   <TempSetting bind:visible={showTempSetting} />
 </div>

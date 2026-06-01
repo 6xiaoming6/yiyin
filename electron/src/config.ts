@@ -3,7 +3,7 @@ import fs from 'node:fs'
 
 import path from 'node:path'
 
-import { defTemps, exifFields, getDefTemp } from '@/common/const'
+import { defPresets, defTemps, exifFields, getDefTemp } from '@/common/const'
 
 import { arrToObj, normalize, tryCatch } from '@/common/utils'
 import { getPath, userDataPath } from './path'
@@ -54,6 +54,8 @@ export const DefaultConfig: IConfig = {
   customTempFields: [getDefOptionItem('')],
 
   temps: [getDefTemp()],
+
+  presets: [...defPresets],
 
   versionUpdateInfo: {
     version: import.meta.env.VITE_VERSION,
@@ -146,6 +148,7 @@ export function getConfig(def = false) {
         tempFields: fileConfig.tempFields || _config.tempFields,
         customTempFields: fileConfig.customTempFields || _config.customTempFields,
         temps: fileConfig.temps || _config.temps,
+        presets: fileConfig.presets || _config.presets,
       } as Partial<IConfig>)
     }
 

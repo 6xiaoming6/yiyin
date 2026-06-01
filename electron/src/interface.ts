@@ -1,5 +1,6 @@
 import type { OutputOption } from '@modules/image-tool/interface'
 
+import type { IFramePreset } from '@/common/const/def-presets'
 import type { ITemp } from '@/common/const/def-temps'
 
 export interface IConfig {
@@ -67,6 +68,11 @@ export interface IConfig {
    * 模板
    */
   temps: ITemp[]
+
+  /**
+   * 印框预设
+   */
+  presets: IFramePreset[]
 
   versionUpdateInfo: {
     checkDate: number
