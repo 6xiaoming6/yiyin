@@ -124,6 +124,13 @@ function normalizeOutputPath(output: unknown) {
   return output
 }
 
+function mergePresets(presets: IConfig['presets'] = []) {
+  return [
+    ...defPresets,
+    ...presets.filter(preset => preset.type === 'custom'),
+  ]
+}
+
 export function getConfig(def = false) {
   const _config: IConfig = getDefConf()
 
@@ -148,7 +155,7 @@ export function getConfig(def = false) {
         tempFields: fileConfig.tempFields || _config.tempFields,
         customTempFields: fileConfig.customTempFields || _config.customTempFields,
         temps: fileConfig.temps || _config.temps,
-        presets: fileConfig.presets || _config.presets,
+        presets: mergePresets(fileConfig.presets || _config.presets),
       } as Partial<IConfig>)
     }
 

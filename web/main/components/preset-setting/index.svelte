@@ -14,6 +14,7 @@
   export let beforeClose: any = null
 
   let currentPresetName = '默认柔和'
+  let expandedPresetKey = ''
 
   interface IDialogData {
     visible: boolean
@@ -31,6 +32,30 @@
 
   $: systemPresets = ($config.presets || []).filter(p => p.type === 'system')
   $: customPresets = ($config.presets || []).filter(p => p.type === 'custom')
+
+  function getPresetDetailList(options: IFramePresetOptions) {
+    return [
+      { label: '主图占比', value: `${options.main_img_w_rate}%` },
+      { label: '文本间距', value: options.text_margin },
+      { label: '上下边距', value: options.mini_top_bottom_margin },
+      { label: '圆角', value: options.radius_show ? options.radius : '关闭' },
+      { label: '阴影', value: options.shadow_show ? options.shadow : '关闭' },
+      { label: '输出质量', value: options.quality },
+      {
+        label: '宽高比',
+        value: options.bg_rate_show && options.bg_rate?.w && options.bg_rate?.h
+          ? `${options.bg_rate.w}:${options.bg_rate.h}`
+          : '原图比例',
+      },
+      { label: '背景', value: options.solid_bg ? `纯色 ${options.solid_color}` : `模糊 ${options.bg_blur}%` },
+      { label: '横屏输出', value: options.landscape ? '开启' : '关闭' },
+      { label: '原尺寸输出', value: options.origin_wh_output ? '开启' : '关闭' },
+    ]
+  }
+
+  function togglePresetDetail(key: string) {
+    expandedPresetKey = expandedPresetKey === key ? '' : key
+  }
 
   /**
    * 应用预设：将预设的选项更新到当前配置中
@@ -118,6 +143,7 @@
 </script>
 
 <Drawer
+  class='preset-setting-drawer'
   size='500px'
   title='印框预设'
   bind:visible
@@ -140,11 +166,33 @@
       <div class='preset-section'>
         <div class='preset-section-title'>内置预设</div>
         {#each systemPresets as preset (preset.key)}
-          <div class='preset-item'>
-            <span class='preset-name'>{preset.name}</span>
-            <div class='preset-actions'>
-              <span class='button grass' on:click={() => applyPreset(preset)} on:keypress role='button' tabindex='-1'>应用</span>
+          <div class='preset-item' class:expanded={expandedPresetKey === preset.key}>
+            <div class='preset-item-main'>
+              <span class='preset-name'>{preset.name}</span>
+              <div class='preset-actions'>
+                <span class='button grass' on:click={() => applyPreset(preset)} on:keypress role='button' tabindex='-1'>应用</span>
+              </div>
+              <span
+                class='preset-expand-icon db-icon-arrow-down'
+                class:open={expandedPresetKey === preset.key}
+                title='查看预设参数'
+                on:click={() => togglePresetDetail(preset.key)}
+                on:keypress
+                role='button'
+                tabindex='-1'
+              ></span>
             </div>
+
+            {#if expandedPresetKey === preset.key}
+              <div class='preset-detail-list'>
+                {#each getPresetDetailList(preset.options) as item}
+                  <div class='preset-detail-item'>
+                    <span>{item.label}</span>
+                    <b>{item.value}</b>
+                  </div>
+                {/each}
+              </div>
+            {/if}
           </div>
         {/each}
       </div>
@@ -154,14 +202,36 @@
       <div class='preset-section'>
         <div class='preset-section-title'>我的预设</div>
         {#each customPresets as preset (preset.key)}
-          <div class='preset-item'>
-            <span class='preset-name'>{preset.name}</span>
-            <div class='preset-actions'>
-              <span class='button grass' on:click={() => applyPreset(preset)} on:keypress role='button' tabindex='-1'>应用</span>
-              <span class='button grass' on:click={() => updatePreset(preset)} on:keypress role='button' tabindex='-1'>更新</span>
-              <span class='button grass' on:click={() => renamePreset(preset)} on:keypress role='button' tabindex='-1'>重命名</span>
-              <span class='button grass' on:click={() => deletePreset(preset)} on:keypress role='button' tabindex='-1'>删除</span>
+          <div class='preset-item' class:expanded={expandedPresetKey === preset.key}>
+            <div class='preset-item-main'>
+              <span class='preset-name'>{preset.name}</span>
+              <div class='preset-actions'>
+                <span class='button grass' on:click={() => applyPreset(preset)} on:keypress role='button' tabindex='-1'>应用</span>
+                <span class='button grass' on:click={() => updatePreset(preset)} on:keypress role='button' tabindex='-1'>更新</span>
+                <span class='button grass' on:click={() => renamePreset(preset)} on:keypress role='button' tabindex='-1'>重命名</span>
+                <span class='button grass' on:click={() => deletePreset(preset)} on:keypress role='button' tabindex='-1'>删除</span>
+              </div>
+              <span
+                class='preset-expand-icon db-icon-arrow-down'
+                class:open={expandedPresetKey === preset.key}
+                title='查看预设参数'
+                on:click={() => togglePresetDetail(preset.key)}
+                on:keypress
+                role='button'
+                tabindex='-1'
+              ></span>
             </div>
+
+            {#if expandedPresetKey === preset.key}
+              <div class='preset-detail-list'>
+                {#each getPresetDetailList(preset.options) as item}
+                  <div class='preset-detail-item'>
+                    <span>{item.label}</span>
+                    <b>{item.value}</b>
+                  </div>
+                {/each}
+              </div>
+            {/if}
           </div>
         {/each}
       </div>
